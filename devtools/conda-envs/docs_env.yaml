@@ -1,0 +1,33 @@
+name: test
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - ase
+  - pip
+  - dask
+  - h5py
+  - hdf5
+  - ipyparallel
+  - ipython
+  - jupyter
+  - keras
+  - matplotlib
+  - numba
+  - numpy
+  - pandas
+  - periodictable
+  - scikit-learn
+  - scipy
+  - seaborn
+  - statsmodels
+  - sympy
+  - tensorflow
+  - pytest
+  - pytest-cov
+  - pip:
+    - codecov 
+    - tabulate
+    - pyscf
+
+

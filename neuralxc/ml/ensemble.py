@@ -4,6 +4,23 @@ import numpy as np
 
 
 class EnsembleEstimator(BaseEstimator):
+    """
+    Given a list of estimators, creates an ensemble of estimators.
+    Serves as base class for ChainedEstimator and StackedEstimator and should
+    not be instantiated.
+
+
+    Parameters
+    ----------
+
+    estimators: list of estimators
+        ensemble members
+
+    operation: str for function
+        how to combine the ensemble predictions, if str, should be a numpy member
+
+    """
+
     def __init__(self, estimators, operation='sum'):
 
         allows_threading = False
@@ -72,6 +89,10 @@ class EnsembleEstimator(BaseEstimator):
 
 
 class ChainedEstimator(EnsembleEstimator):
+    """
+    Ensemble Estimator which chains multiple estimators together, i.e.
+    the output of one estimator is used as input for the next one
+    """
     allows_threading = False
 
     def fit(self, X, y=None, **fit_kwargs):
@@ -146,6 +167,10 @@ class ChainedEstimator(EnsembleEstimator):
 
 
 class StackedEstimator(EnsembleEstimator):
+    """
+    Ensemble Estimator which stacks multiple estimators together, i.e.
+    the output of all estimators is combined with self.operation (e.g. sum, max, min etc.)
+    """
     allows_threading = False
 
     def fit(self, X, y=None, **fit_kwargs):

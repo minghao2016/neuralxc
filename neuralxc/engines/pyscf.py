@@ -13,6 +13,22 @@ import neuralxc
 
 
 def compute_KS(atoms, path='pyscf.chkpt', basis='ccpvdz', xc='PBE', nxc=''):
+    """ Run Kohn-Sham (KS) DFT calculation for system specified in atoms.
+
+    Parameters
+    ----------
+    atoms: ase.Atoms
+        ase.Atoms object describing the system
+    path: str
+        path to save PySCF checkpoint to (default: pyscf.chkpt)
+    basis: str
+        basis set, use PySCF nomenclature (default: ccpvdz)
+    xc: str
+        xc-functional, use PySCF nomenclature (default: PBE)
+    nxc: str
+        path to neuralxc-functional (default '': do not use NXC)
+    """
+
     pos = atoms.positions
     spec = atoms.get_chemical_symbols()
     mol_input = [[s, p] for s, p in zip(spec, pos)]
@@ -24,12 +40,15 @@ def compute_KS(atoms, path='pyscf.chkpt', basis='ccpvdz', xc='PBE', nxc=''):
     if not nxc is '':
         model = neuralxc.get_nxc_adapter('pyscf', nxc)
         model.initialize(mol)
-        mf.get_veff = veff_mod(mf, model)
+        mf.get_veff = _veff_mod(mf, model)
     mf.kernel()
     return mf, mol
 
 
-def veff_mod(mf, model):
+def _veff_mod(mf, model):
+    """
+    Modified effective potential that includes NeuralXC functional
+    """
     def get_veff(mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1):
         veff = pyscf.dft.rks.get_veff(mf, mol, dm, dm_last, vhf_last, hermi)
         vnxc = NPArrayWithTag(veff.shape)

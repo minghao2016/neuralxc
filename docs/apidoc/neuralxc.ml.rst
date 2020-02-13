@@ -6,29 +6,26 @@ neuralxc.ml
    :undoc-members:
    :show-inheritance:
 
-neuralxc.ml.activation 
------------------------------
-
-.. automodule:: neuralxc.ml.activation
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-neuralxc.ml.ensemble 
----------------------------
-
-.. automodule:: neuralxc.ml.ensemble
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 neuralxc.ml.network 
 --------------------------
 
-.. automodule:: neuralxc.ml.network
+.. autoclass:: neuralxc.ml.network.NXCPipeline
    :members:
-   :undoc-members:
    :show-inheritance:
+
+.. autoclass:: neuralxc.ml.network.NetworkEstimator
+   :members:
+   :show-inheritance:
+
+.. autoclass:: neuralxc.ml.network.NumpyNetworkEstimator
+   :members:
+   :show-inheritance:
+
+.. autoclass:: neuralxc.ml.network.Energy_Network
+   :members: train
+   :show-inheritance:
+
 
 neuralxc.ml.transformer 
 ------------------------------
@@ -38,11 +35,26 @@ neuralxc.ml.transformer
    :undoc-members:
    :show-inheritance:
 
+neuralxc.ml.ensemble 
+---------------------------
+
+.. autoclass:: neuralxc.ml.ensemble.EnsembleEstimator
+   :show-inheritance:
+
+.. autoclass:: neuralxc.ml.ensemble.ChainedEstimator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: neuralxc.ml.ensemble.StackedEstimator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 neuralxc.ml.utils 
 ------------------------
 
-.. automodule:: neuralxc.ml.utils
+.. autoclass:: neuralxc.ml.utils.SampleSelector
    :members:
-   :undoc-members:
    :show-inheritance:
 

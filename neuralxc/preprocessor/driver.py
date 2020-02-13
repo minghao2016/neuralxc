@@ -107,6 +107,29 @@ def calculate_distributed(atoms, app, workdir, kwargs, n_workers=-1):
 
 
 def driver(atoms, app, workdir, nworkers, kwargs):
+    """
+    Using an electronic structure code (app) simulate all systems with a given
+    DFT method
+
+    Parameters
+    ----------
+    atoms: list of ase.Atoms
+        All systems
+    app: str
+        Name of code to use (e.g. siesta, pyscf etc.)
+    workdir: str
+        Path to work directory
+    nworkers: int
+        If parallelized, number of workers to use
+    kwargs: dict
+        keyword arguments to pass to engine
+
+    Returns
+    -------
+    results: list of ase.Atoms
+        Same as input with results updated
+    """
+    
     dir = os.path.abspath(workdir)
     # results = calculate_distributed(atoms, app, dir, kwargs, nworkers)
     if kwargs.get('mbe', False):

@@ -18,21 +18,21 @@ class ProjectorRegistry(ABCRegistry):
 
 
 class BaseProjector(metaclass=ProjectorRegistry):
-
+    """
+    Base class for density projector
+    Parameters
+    ------------------
+    unitcell: array float
+    	Unitcell in bohr
+    grid: array float
+    	Grid points per unitcell
+    basis_instructions: dict
+    	Instructions that defines basis
+    """
     _registry_name = 'base'
 
     @abstractmethod
     def __init__(self, unitcell, grid, basis_instructions):
-        """
-        Parameters
-        ------------------
-        unitcell, array float
-        	Unitcell in bohr
-        grid, array float
-        	Grid points per unitcell
-        basis_instructions, dict
-        	Instructions that defines basis
-        """
         pass
 
     @abstractmethod
@@ -41,16 +41,16 @@ class BaseProjector(metaclass=ProjectorRegistry):
 
         Parameters
         ------------------
-        rho, array, float
+        rho: array, float
         	Electron density in real space
-        positions, array float
+        positions: array float
         	atomic positions
-        species, list string
+        species: list string
         	atomic species (chem. symbols)
 
         Returns
         ------------
-        c, dict of np.ndarrays
+        c: dict of np.ndarrays
         	Basis representation, dict keys correspond to atomic species.
         """
         pass
@@ -61,23 +61,35 @@ class BaseProjector(metaclass=ProjectorRegistry):
 
         Parameters
         ------------------
-        dEdc , dict of numpy.ndarray
+        dEdc : dict of numpy.ndarray
 
-        positions, array float
+        positions: array float
         	atomic positions
-        species, list string
+        species: list string
         	atomic species (chem. symbols)
-        calc_forces, bool
+        calc_forces: bool
         	Calc. and return force corrections + stress corrections (concatenated)
         Returns
         ------------
-        V, (force_correction) np.ndarray
+        V: (force_correction) np.ndarray
         """
         pass
 
 
 def DensityProjector(unitcell=None, grid=None, basis_instructions=None):
+    """ factory method, returns projector specified in basis_instructions under
+    "application" and "projector_type".
+    Default: Return OrthoProjector
 
+    Parameters
+    ------------------
+    unitcell: array float
+    	Unitcell in bohr
+    grid: array float
+    	Grid points per unitcell
+    basis_instructions: dict
+    	Instructions that defines basis
+    """
     application = basis_instructions.get('application', 'siesta')
     projector_type = basis_instructions.get('projector_type', 'ortho')
     if application == 'pyscf':
@@ -91,21 +103,14 @@ def DensityProjector(unitcell=None, grid=None, basis_instructions=None):
 
 
 class DefaultProjector(BaseProjector):
-
+    """
+    Use this projector if density is given in real space on a grid.
+    Implements all routines except for radial basis which is specified in child
+    classes.
+    """
     _registry_name = 'default'
 
-    #TODO: Make some functions private
     def __init__(self, unitcell=None, grid=None, basis_instructions=None):
-        """
-        Parameters
-        ------------------
-        unitcell, array float
-        	Unitcell in bohr
-        grid, array float
-        	Grid points per unitcell
-        basis_instructions, dict
-        	Instructions that defines basis
-        """
         self.basis = basis_instructions
 
         # Initialize the matrix used to orthonormalize radial basis
@@ -130,22 +135,6 @@ class DefaultProjector(BaseProjector):
         self.all_angs = {}
 
     def get_basis_rep(self, rho, positions, species):
-        """Calculates the basis representation for a given real space density
-
-        Parameters
-        ------------------
-        rho, array, float
-        	Electron density in real space
-        positions, array float
-        	atomic positions
-        species, list string
-        	atomic species (chem. symbols)
-
-        Returns
-        ------------
-        c, dict of np.ndarrays
-        	Basis representation, dict keys correspond to atomic species.
-        """
         basis_rep = {}
         for pos, spec in zip(positions, species):
             if not spec in basis_rep:
@@ -185,22 +174,6 @@ class DefaultProjector(BaseProjector):
         return basis_rep
 
     def get_V(self, dEdC, positions, species, calc_forces=False, rho=None):
-        """Calculates the basis representation for a given real space density
-
-        Parameters
-        ------------------
-        dEdc , dict of numpy.ndarray
-
-        positions, array float
-        	atomic positions
-        species, list string
-        	atomic species (chem. symbols)
-        calc_forces, bool
-        	Calc. and return force corrections + stress corrections (concatenated)
-        Returns
-        ------------
-        V, (force_correction) np.ndarray
-        """
         if isinstance(dEdC, list):
             dEdC = dEdC[0]
 
@@ -236,6 +209,7 @@ class DefaultProjector(BaseProjector):
     def angulars(self, l, m, theta, phi):
         """ Angular functions (uses physics convention for angles)
         (For compatibility with complex version)
+
         Parameters
         ----------
         l: int
@@ -261,15 +235,12 @@ class DefaultProjector(BaseProjector):
 
     @staticmethod
     def angulars_real(l, theta, phi):
-        """ Angular function/angs (uses physics convention for angles)
+        """ Real angular function/angs (uses physics convention for angles)
 
         Parameters
         ----------
         l: int
             angular momentum quantum number
-        m: int
-            angular momentum projection
-
         theta: float or np.ndarray
             longitudinal angle
         phi: float or np.ndarray
@@ -315,7 +286,8 @@ class DefaultProjector(BaseProjector):
                  outer radial cutoff in Angstrom
             W: np.ndarray
                  matrix used to orthonormalize radial basis functions
-
+            angs: list of np.ndarray
+                 angular basis functions if pre-computed
         Returns
         -------
             force: np.ndarray
@@ -421,7 +393,8 @@ class DefaultProjector(BaseProjector):
                  outer radial cutoff in Angstrom
             W: np.ndarray
                  matrix used to orthonormalize radial basis functions
-
+            angs: list of np.ndarray
+                 angular basis functions if pre-computed
         Returns
         -------
             V: np.ndarray
@@ -481,29 +454,34 @@ class DefaultProjector(BaseProjector):
 
     def project(self, rho, box, basis, W=None, return_dict=False, angs=None):
         '''
-            Project the real space density rho onto a set of basis functions
+        Project the real space density rho onto a set of basis functions
 
-            Parameters
-            ----------
-                rho: np.ndarray
-                    electron charge density on grid
-                box: dict
-                     contains the mesh in spherical and euclidean coordinates,
-                     can be obtained with get_box_around()
-                n_rad: int
-                     number of radial functions
-                n_l: int
-                     number of spherical harmonics
-                r_o: float
-                     outer radial cutoff in Angstrom
-                W: np.ndarray
-                     matrix used to orthonormalize radial basis functions
+        Parameters
+        ----------
+            rho: np.ndarray
+                electron charge density on grid
+            box: dict
+                 contains the mesh in spherical and euclidean coordinates,
+                 can be obtained with get_box_around()
+            n_rad: int
+                 number of radial functions
+            n_l: int
+                 number of spherical harmonics
+            r_o: float
+                 outer radial cutoff in Angstrom
+            W: np.ndarray
+                 matrix used to orthonormalize radial basis functions
+            return_dict: boolean
 
-            Returns
-            --------
-                dict
-                    dictionary containing the coefficients
-            '''
+            angs: list of np.ndarray
+                 angular basis functions if pre-computed
+
+        Returns
+        --------
+            coeff or (coeff, angs), dict (if return_dict) or tuple of np.ndarrays
+                dictionary containing the coefficients or coefficients in array-form
+                together with the angular functions (for re-use)
+        '''
 
         n_rad = basis['n']
         n_l = basis['l']
@@ -610,7 +588,9 @@ class DefaultProjector(BaseProjector):
 
 
 class OrthoProjector(DefaultProjector):
-
+    """
+    Implements orthonormal radial functions as specified in the NeuralXC paper.
+    """
     _registry_name = 'ortho'
 
     @classmethod
@@ -784,6 +764,9 @@ class OrthoProjector(DefaultProjector):
 
 
 class NonOrthoProjector(OrthoProjector):
+    """
+    Same as OrthoProjector but radials are not orthonormalized
+    """
     _registry_name = 'non-ortho'
 
     @staticmethod
@@ -878,7 +861,9 @@ class NonOrthoProjector(OrthoProjector):
 
 
 class BehlerProjector(OrthoProjector):
-
+    """
+    Gaussian radial functions similar to the ones used in Behler-Parinello networks
+    """
     _registry_name = 'behler'
 
     @staticmethod
@@ -894,11 +879,18 @@ class BehlerProjector(OrthoProjector):
 
 
 class DeltaProjector():
+    """
+    Wrapper class that can store a constant basis set representation
+    and subtract it from given densities (e.g. subtract contribution from
+    core densities)
+
+    Parameters
+    ----------
+
+    projector, neuralxc.projector.projector.BaseProjector child-class
+        wrap DeltaProjector around this projector
+    """
     def __init__(self, projector):
-        """ Wrapper class that can store a constant basis set representation
-        and subtract it from given densities (e.g. subtract contribution from
-        core densities)
-        """
         self.projector = projector
         self.constant_basis_rep = {}
 

@@ -414,6 +414,10 @@ def get_preprocessor(preprocessor, atoms, src_path):
 
 
 class SampleSelector(BaseEstimator):
+    """ Sample selector selects n_instances samples from a dataset X by using a k-means
+    clustering algorithm in feature space and selecting the data points closest to
+    the cluster centers (number of clusters equals number of samples)
+    """
     def __init__(self, n_instances, random_state=None):
         self._n_instances = n_instances
         self._random_state = random_state
@@ -422,6 +426,19 @@ class SampleSelector(BaseEstimator):
         pass
 
     def predict(self, X):
+        """
+        Sample from dataset X (using max-distance in feature space)
+
+        Parameters
+        ----------
+        X: NeuralXC dataset
+            Full dataset
+
+        Returns
+        -------
+        picks: list of int
+            indeces of sample
+        """
 
         if isinstance(X, tuple):
             X = X[0]
@@ -448,7 +465,6 @@ class SampleSelector(BaseEstimator):
                         n_samples,
                         picked=[],
                         cluster_method=KMeans,
-                        pca_threshold=0.999,
                         random_state=None):
 
         clustering = cluster_method(n_samples, random_state=random_state).fit(data)

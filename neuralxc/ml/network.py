@@ -28,23 +28,23 @@ Dataset = namedtuple("Dataset", "data species")
 
 
 class NXCPipeline(Pipeline):
+    """ Class that extends the scikit-learn Pipeline by adding get_gradient
+    and save methods. The save method is necessary if the final estimator
+    is a tensorflow neural network as those cannot be pickled.
+
+    Parameters
+    -----------
+
+    steps: list
+        List of Transformers with final step being an Estimator
+    basis_instructions: dict
+        Dictionary containing instructions for the projector.
+        Example {'C':{'n' : 4, 'l' : 2, 'r_o' : 3}}
+    symmetrize_instructions: dict
+        Instructions for symmetrizer.
+        Example {symmetrizer_type: 'casimir'}
+    """
     def __init__(self, steps, basis_instructions, symmetrize_instructions):
-        """ Class that extends the scikit-learn Pipeline by adding get_gradient
-        and save methods. The save method is necessary if the final estimator
-        is a tensorflow neural network as those cannot be pickled.
-
-        Parameters
-        -----------
-
-        steps: list
-            List of Transformers with final step being an Estimator
-        basis_instructions: dict
-            Dictionary containing instructions for the projector.
-            Example {'C':{'n' : 4, 'l' : 2, 'r_o' : 3}}
-        symmetrize_instructions: dict
-            Instructions for symmetrizer.
-            Example {symmetrizer_type: 'casimir'}
-        """
         self.basis_instructions = basis_instructions
         self.symmetrize_instructions = symmetrize_instructions
         super().__init__(steps)
@@ -148,7 +148,20 @@ def load_pipeline(path):
 
 
 class NumpyNetworkEstimator(BaseEstimator):
+    """
+    Implementation of a fully connected feed-forward neural network in numpy
 
+    Parameters
+    ----------
+    W: list of np.ndarrays
+        model weights
+    B: list of floats
+        model biases
+    activation: str
+        activation to use in hidden layers (example: sigmoid, tanh)
+    trunc: booleal
+        is network truncated after last hidden layer
+    """
     allows_threading = True
 
     def __init__(self, W, B, activation, trunc=False):
@@ -177,7 +190,6 @@ class NumpyNetworkEstimator(BaseEstimator):
         return NumpyNetworkEstimator(W_trunc, b_trunc, self.activation, True)
 
     def transform(self, X, *args, **kwargs):
-
         if not hasattr(self, 'trunc'): self.trunc = False
         if not self.trunc:
             print('Warning: NumpyNetworkEstimator was not truncated but is being used inside a Pipeline.'\
@@ -195,6 +207,19 @@ class NumpyNetworkEstimator(BaseEstimator):
         return self
 
     def get_gradient(self, X, *args, **kwargs):
+        """
+        Gives dE/dX, the energy gradient w.r.t. the input features
+
+        Parameters
+        ----------
+        X: NeuralXC data, dict or list of dict containing np.ndarrays
+            ML-features (basis projection of electron density)
+
+        Returns
+        -------
+        Same type as X
+            Gradients dE/dX
+        """
         made_list = False
 
         if not hasattr(self, 'trunc'):
@@ -226,6 +251,19 @@ class NumpyNetworkEstimator(BaseEstimator):
         return predictions
 
     def predict(self, X, *args, **kwargs):
+        """
+        Predict energy for every system
+
+        Parameters
+        ----------
+        X: NeuralXC data, dict or list of dict containing np.ndarrays
+            ML-features (basis projection of electron density)
+
+        Returns
+        -------
+        np.ndarray or list of np.ndarray (for multiple datasets)
+            Energy prediction
+        """
         made_list = False
         if isinstance(X, tuple):
             X = X[0]
@@ -321,6 +359,39 @@ class NumpyNetworkEstimator(BaseEstimator):
 
 class NetworkEstimator(BaseEstimator):
 
+    """ Estimator wrapper for the tensorflow based Energy_Network class which
+    implements a Behler-Parinello type neural network
+
+    Parameters
+    ----------
+    n_nodes: int
+        number of nodes for hidden layers
+    n_layers: int
+        number of hidden layers
+    b:  float
+        weight decay parameter (l2-regularization)
+    alpha: float
+        training step size (default: 0.01)
+    max_steps: int
+        max. number of training epochs
+    test_size:  float
+        fraction of dataset that should be reserved for testing (default: 0.0)
+    valid_size:  float
+        fraction of dataset that should be reserved for validation (default: 0.2)
+    random_seed: int
+        set seed for random initiliazation of weights in network
+    batch_size: int
+        Batch size to be used during training, if 0 use entire dataset
+        (default: 0)
+    activation: str
+        Activation used inside hidden layers (default: sigmoid)
+    optimizer: str
+        Optimizer used (default: Adam)
+    target_loss: floas
+        Stop training once this target loss is reached. (default: -1)
+    """
+
+
     allows_threading = False
 
     def __init__(self,
@@ -336,9 +407,6 @@ class NetworkEstimator(BaseEstimator):
                  activation='sigmoid',
                  optimizer=None,
                  target_loss=-1):
-        """ Estimator wrapper for the tensorflow based Network class which
-        implements a Behler-Parinello type neural network
-        """
         self.n_nodes = n_nodes
         self.n_layers = n_layers
         self.b = b
@@ -404,8 +472,17 @@ class NetworkEstimator(BaseEstimator):
             self._network.restore_model(self.path)
 
     def fit(self, X, y=None, *args, **kwargs):
+        """
+        Fits network to dataset
 
-        #TODO: Currently does not allow to continue training
+        Parameters
+        ----------
+        X: NeuralXC data, dict or list of dict containing np.ndarrays
+            ML-features (basis projection of electron density)
+        y: np.ndarray
+            Target energies
+        """
+
         self.build_network(X, y)
         self._network.train(
             step_size=self.alpha,
@@ -419,7 +496,19 @@ class NetworkEstimator(BaseEstimator):
         self.fitted = True
 
     def get_gradient(self, X, *args, **kwargs):
+        """
+        Gives dE/dX, the energy gradient w.r.t. the input features
 
+        Parameters
+        ----------
+        X: NeuralXC data, dict or list of dict containing np.ndarrays
+            ML-features (basis projection of electron density)
+
+        Returns
+        -------
+        Same type as X
+            Gradients dE/dX
+        """
         if self._network is None:
             self.build_network(X)
 
@@ -449,6 +538,19 @@ class NetworkEstimator(BaseEstimator):
         return predictions
 
     def predict(self, X, *args, **kwargs):
+        """
+        Predict energy for every system
+
+        Parameters
+        ----------
+        X: NeuralXC data, dict or list of dict containing np.ndarrays
+            ML-features (basis projection of electron density)
+
+        Returns
+        -------
+        np.ndarray or list of np.ndarray (for multiple datasets)
+            Energy prediction
+        """
 
         if self._network is None:
             self.build_network(X)
@@ -531,6 +633,15 @@ class NetworkEstimator(BaseEstimator):
         self.path = path
 
     def get_np_estimator(self):
+        """
+        Convert this neural network estimator that uses Tensorflow into
+        a numpy neural network
+
+        Returns
+        -------
+        NumpyNetworkEstimator
+            Neural Network constructed with numpy arrays (no tensorflow needed)
+        """
         W, B = self._network.get_weights()
         return NumpyNetworkEstimator(W, B, self.activation)
 
@@ -744,10 +855,12 @@ class Energy_Network():
                     cross-validation is used
                 random_seed: int
                     set seed for random initiliazation of weights in network
+                batch_size: int
+                    Batch size to be used during training, if 0 use entire dataset
+                    (default: 0)
+                target_loss: float
+                    Stop training once this target loss is reached. (default: -1)
 
-            Returns
-            --------
-            None
         """
         # verbose = self.verbose
         verbose = True

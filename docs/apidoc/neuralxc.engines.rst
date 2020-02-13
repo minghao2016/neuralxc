@@ -9,7 +9,14 @@ neuralxc.engines
 neuralxc.engines.engine
 ------------------------------
 
-.. automodule:: neuralxc.engines.engine
+.. autofunction:: neuralxc.engines.engine.Engine
+
+.. autoclass:: neuralxc.engines.engine.PySCFEngine
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autoclass:: neuralxc.engines.engine.SiestaEngine
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,8 +32,5 @@ neuralxc.engines.pyscf
 neuralxc.engines.siesta
 ------------------------------
 
-.. automodule:: neuralxc.engines.siesta
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autoclass:: neuralxc.engines.siesta.CustomSiesta
 

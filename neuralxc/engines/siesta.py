@@ -6,6 +6,10 @@ from ase.calculators.siesta.base_siesta import *
 
 
 class CustomSiesta(Siesta):
+    """ Modified ASE Siesta calculator (largely adapted from ASE)
+    that allows to provide a fdf_file which is used to determine
+    parameters. Please see ase.calculators.siesta for documentation.
+    """
     def __init__(self, fdf_path=None, **kwargs):
         self.fdf_path = fdf_path
         self.nxc = kwargs.pop('nxc', '')

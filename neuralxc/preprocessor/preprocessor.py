@@ -15,7 +15,24 @@ from dask.distributed import Client, LocalCluster
 
 
 class Preprocessor(TransformerMixin, BaseEstimator):
-    def __init__(self, basis_instructions, src_path, atoms, target_path, num_workers=1):
+    """
+    Given a directory structure src_path/0/, src_path/1/, src_path/2/ etc. each directory
+    containing results finished SCF calculations, walk through the directory and project
+    every electron density on a basis specified in basis_instructions.
+
+    Parameters
+    ----------
+    basis_instructions: dict
+        Defines the ML basis set for projection
+    src_path: str
+        Path to directory containing SCF results
+    atoms: list of ase.Atoms
+        All systems that calculations were run for
+    target_path: deprecated
+    num_workers: int
+        If parallelized, number of workers to use
+    """
+    def __init__(self, basis_instructions, src_path, atoms, target_path=None, num_workers=1):
         self.basis_instructions = basis_instructions
         self.src_path = src_path
         self.atoms = atoms
@@ -27,6 +44,18 @@ class Preprocessor(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, X=None, y=None):
+        """ Perform the basis set projection
+
+        Parameters
+        ----------
+        X: array-like containing ints/indeces (optional)
+            Can be used to index datasets in a cross-validation setting
+
+        Returns
+        --------
+        data: np.ndarray
+            Projected electron densities (ML features)
+        """
         basis_rep = self.get_basis_rep()
         self.data = basis_rep
         self.computed_basis = self.basis_instructions

@@ -1,4 +1,4 @@
-""" Implements custom transformer for the special kind of grouped datasets
+""" Implements custom transformers for the special kind of grouped datasets
 that neuralxc is working with.
 
 A typical dataset looks like this:
@@ -16,7 +16,7 @@ import numpy as np
 
 
 class GroupedTransformer(ABC):
-    """ Abstract base class, grouped transformer extend the functionality
+    """ Abstract base class, grouped transformers extend the functionality
     of sklearn Transformers to neuralxc specific grouped data. Further, they
     implement a get_gradient method.
     """
@@ -29,6 +29,20 @@ class GroupedTransformer(ABC):
         super().__init__(*args, **kwargs)
 
     def transform(self, X, y=None, **fit_params):
+        """
+        Apply transformer to X.
+
+        Parameters
+        ----------
+        X: NeuralXC dataset
+            Training data
+
+        Returns
+        -------
+        results: NeuralXC dataset
+            Transformed data
+
+        """
         was_tuple = False
         if isinstance(X, tuple):
             y = X[1]
@@ -58,6 +72,19 @@ class GroupedTransformer(ABC):
             return results
 
     def fit(self, X, y=None):
+        """
+        Fit the model with X.
+
+        Parameters
+        ----------
+        X: NeuralXC dataset
+            Training data
+
+        Returns
+        -------
+        self
+            Returns the instance itself
+        """
         if self.is_fit:
             return self
         else:
@@ -92,6 +119,20 @@ class GroupedTransformer(ABC):
                 return super().fit(atomic_shape(super_X))
 
     def get_gradient(self, X, y=None, **fit_params):
+        """
+        Return the gradient of the transformer. If F is the transformer,
+        returns dF/dX.
+
+        Parameters
+        ----------
+        X: NeuralXC dataset
+            Training data
+
+        Returns
+        -------
+        NeuralXC dataset
+            Gradient in the shape of the training data
+        """
         was_tuple = False
         if isinstance(X, tuple):
             y = X[1]
@@ -127,10 +168,10 @@ class GroupedTransformer(ABC):
 # TODO: The better solution might be to have a factory, pass an instance of the object
 # and copy this instance. Abstract factory?
 class GroupedVarianceThreshold(GroupedTransformer, VarianceThreshold):
+    """ GroupedTransformer version of sklearn VarianceThreshold.
+        See their documentation for more information
+    """
     def __init__(self, threshold=0.0):
-        """ GroupedTransformer version of sklearn VarianceThreshold.
-            See their documentation for more information
-        """
         self._before_fit = identity  # lambdas can't be pickled
         self._initargs = []
         self.treshold = threshold
@@ -151,6 +192,9 @@ class GroupedVarianceThreshold(GroupedTransformer, VarianceThreshold):
 
 
 class GroupedPCA(GroupedTransformer, PCA):
+    """ GroupedTransformer version of sklearn principal component analysis.
+        See their documentation for more information
+    """
     def __init__(self,
                  n_components=None,
                  copy=True,
@@ -159,10 +203,6 @@ class GroupedPCA(GroupedTransformer, PCA):
                  tol=0.0,
                  iterated_power='auto',
                  random_state=None):
-        """ GroupedTransformer version of sklearn principal component analysis.
-            See their documentation for more information
-        """
-
         self.n_components = n_components
         self.copy = copy
         self.whiten = whiten
@@ -212,10 +252,10 @@ class GroupedPCA(GroupedTransformer, PCA):
 
 
 class GroupedStandardScaler(GroupedTransformer, StandardScaler):
+    """ GroupedTransformer version of sklearn StandardScaler.
+        See their documentation for more information
+    """
     def __init__(self, threshold=0.0):
-        """ GroupedTransformer version of sklearn StandardScaler.
-            See their documentation for more information
-        """
         self._before_fit = identity  # lambdas can't be pickled
         self._initargs = []
         self._initkwargs = {}

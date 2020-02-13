@@ -25,16 +25,39 @@ class BaseEngine(metaclass=EngineRegistry):
 
 
 def Engine(app, **kwargs):
+    """ Engine for DFT calculations (factory method)
+
+        Parameters
+        ----------
+        app: str
+            Name of electronic structure code (e.g. siesta, pyscf)
+
+        Returns
+        -------
+        Child class of BaseEngine
+    """
+
 
     registry = BaseEngine.get_registry()
-    if not app in registry:
+    if not app.lower() in registry:
         raise Exception('Egnine: {} not registered'.format(app))
 
-    return registry[app](**kwargs)
+    return registry[app.lower()](**kwargs)
 
 
 class PySCFEngine(BaseEngine):
+    """
+    Engine to run DFT calculations with PySCF (other SCF methods currently not supported).
 
+    Parameters
+    -------
+    xc: string
+        default: PBE
+    basis: string
+        default: ccpvdz
+    nxc: string
+        default: ''
+    """
     _registry_name = 'pyscf'
 
     def __init__(self, **kwargs):
@@ -43,6 +66,19 @@ class PySCFEngine(BaseEngine):
         self.nxc = kwargs.get('nxc', '')
 
     def compute(self, atoms):
+        """
+        Run DFT calculation on system given by ASE atoms object
+
+        Parameters
+        ---------
+        atoms: ase.Atoms
+            Atoms object containing system together with parameters (unitcell etc.)
+
+        Returns
+        ---------
+        ase.Atoms
+            Same as input but with results updated
+        """
         mf, mol = compute_KS(atoms, basis=self.basis, xc=self.xc, nxc=self.nxc)
         atoms.calc = SinglePointCalculator(atoms)
         atoms.calc.results = {'energy': mf.energy_tot() * Hartree}
@@ -50,7 +86,18 @@ class PySCFEngine(BaseEngine):
 
 
 class SiestaEngine(BaseEngine):
+    """
+    Engine to run DFT calculations with SIESTA.
 
+    Parameters
+    -------
+    fdf_path: string
+        default: None
+    xc: string
+        default: PBE
+    basis_set: string
+        default: DZP
+    """
     _registry_name = 'siesta'
 
     def __init__(self, **kwargs):
@@ -71,6 +118,19 @@ class SiestaEngine(BaseEngine):
         self.calc = CustomSiesta(fdf_path, **kwargs)
 
     def compute(self, atoms):
+        """
+        Run DFT calculation on system given by ASE atoms object
+
+        Parameters
+        ---------
+        atoms: ase.Atoms
+            Atoms object containing system together with parameters (unitcell etc.)
+
+        Returns
+        ---------
+        ase.Atoms
+            Same as input but with results updated
+        """
         atoms.calc = self.calc
         atoms.get_potential_energy()
         return atoms

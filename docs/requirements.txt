@@ -1,0 +1,15 @@
+ase
+dask
+h5py
+matplotlib
+numba
+periodictable
+seaborn
+statsmodels
+sympy
+tensorflow==1.1.0
+pytest
+pytest-cov
+codecov 
+tabulate
+pyscf

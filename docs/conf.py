@@ -148,3 +148,4 @@ texinfo_documents = [
 ]
 
 # -- Extension configuration -------------------------------------------------
+autodoc_moc_imports = ["spher_grad"]

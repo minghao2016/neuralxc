@@ -16,6 +16,8 @@ Welcome to neuralxc's documentation!
 Indices and tables
 ==================
 
+This is just a test entry
+
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
